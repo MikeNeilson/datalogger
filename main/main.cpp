@@ -45,6 +45,7 @@ const gpio_num_t CS   = GPIO_NUM_5;
 void initialize_card() {
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     host.slot = HSPI_HOST;
+    host.max_freq_khz = 5000;
 
     spi_bus_config_t bus_cfg = 
     {
@@ -56,7 +57,7 @@ void initialize_card() {
         .max_transfer_sz = 4000
     };
 
-    ESP_LOGE(TAG, "Initializing spi bus");
+    ESP_LOGI(TAG, "Initializing spi bus");
     esp_err_t ret = spi_bus_initialize(HSPI_HOST,&bus_cfg,1);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize the spi bus (%s). ", esp_err_to_name(ret));
@@ -74,7 +75,7 @@ void initialize_card() {
     // If format_if_mount_failed is set to true, SD card will be partitioned and
     // formatted in case when mounting fails.
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = false,
+        .format_if_mount_failed = true,
         .max_files = 5,
         .allocation_unit_size = 4 * 1024
     };
@@ -84,7 +85,7 @@ void initialize_card() {
     // Please check its source code and implement error recovery when developing
     // production applications.
     sdmmc_card_t* card;
-    ESP_LOGE(TAG,"Mounting SD card");
+    ESP_LOGI(TAG,"Mounting SD card");
     ret = esp_vfs_fat_sdspi_mount("/sdcard", &host, &slot_config, &mount_config, &card);
 
     if (ret != ESP_OK) {
@@ -110,6 +111,13 @@ extern "C" void app_main(void)
        errors. */
     try {
         initialize_card();
+
+        sqlite3 *db;
+        int res = sqlite3_open("/sdcard/test.db",&db);
+        if( res !=0 )  {
+            ESP_LOGE(TAG,"failed to open datbase.");
+        }
+        ESP_LOGI(TAG,"database opened");
         /* This line may throw an exception if the pin number is invalid.
          * Alternatively to 4, choose another output-capable pin. */
         GPIO_Output gpio(GPIONum(4));
