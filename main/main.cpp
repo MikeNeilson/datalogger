@@ -25,6 +25,7 @@
 #include "esp_log.h"
 #include "gpio_cxx.hpp"
 
+#include "loggerdb.hpp"
 
 const char *TAG= "LOGGER";
 
@@ -121,17 +122,28 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG,"database opened");
         /* This line may throw an exception if the pin number is invalid.
          * Alternatively to 4, choose another output-capable pin. */
-        std::string create_table = "create table config(version int, num_sensors int)";
-        sqlite3_exec(db,create_table.c_str(),nullptr,nullptr,nullptr);
-        sqlite3_exec(db,"insert into config(version,num_sensors) values (1,3);",nullptr,nullptr,nullptr);
+        char *zErrMsg = nullptr;
+        int sqlRes = sqlite3_exec(db,logger::dbsql::create_db.c_str(),nullptr,nullptr,&zErrMsg);
+        if ( sqlRes != SQLITE_OK ) {
+            printf("SQL error: %s\n", zErrMsg);
+            sqlite3_free(zErrMsg);
+        }
+        sqlRes = sqlite3_exec(db,"insert into config(key,value,type) values ('ssid','mmnet','text');",nullptr,nullptr,&zErrMsg);
+        if ( sqlRes != SQLITE_OK ) {
+            printf("SQL error: %s\n", zErrMsg);
+            sqlite3_free(zErrMsg);
+        }
         sqlite3_stmt *stmt;
-        std::string query = "select * from config where version =?";
+        std::string query = "select * from config where key = ?";
         sqlite3_prepare_v2(db,query.c_str(),query.size(),&stmt,NULL);
-        sqlite3_bind_int(stmt,1,1);
-        int sqlRes = sqlite3_step(stmt);
+        sqlite3_bind_text(stmt,1,"ssid",4,NULL);
+        sqlRes = sqlite3_step(stmt);
         if( sqlRes == SQLITE_ROW ) {
-            int num_sensors = sqlite3_column_int(stmt,1);
-            printf("Number of sensors configured %d\n", num_sensors);
+            const unsigned char *ssid = sqlite3_column_text(stmt,1);
+            printf("SSID to use is %s\n",ssid);
+            //sqlite3_free(ssid);
+        } else if( sqlRes == SQLITE_ERROR ) {
+            printf("Error getting ssid %s", sqlite3_errmsg(db));
         }
         sqlite3_finalize(stmt);
 
