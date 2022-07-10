@@ -113,6 +113,7 @@ extern "C" void app_main(void)
         initialize_card();
 
         sqlite3 *db;
+        sqlite3_initialize();
         int res = sqlite3_open("/sdcard/test.db",&db);
         if( res !=0 )  {
             ESP_LOGE(TAG,"failed to open datbase.");
@@ -120,6 +121,20 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG,"database opened");
         /* This line may throw an exception if the pin number is invalid.
          * Alternatively to 4, choose another output-capable pin. */
+        std::string create_table = "create table config(version int, num_sensors int)";
+        sqlite3_exec(db,create_table.c_str(),nullptr,nullptr,nullptr);
+        sqlite3_exec(db,"insert into config(version,num_sensors) values (1,3);",nullptr,nullptr,nullptr);
+        sqlite3_stmt *stmt;
+        std::string query = "select * from config where version =?";
+        sqlite3_prepare_v2(db,query.c_str(),query.size(),&stmt,NULL);
+        sqlite3_bind_int(stmt,1,1);
+        int sqlRes = sqlite3_step(stmt);
+        if( sqlRes == SQLITE_ROW ) {
+            int num_sensors = sqlite3_column_int(stmt,1);
+            printf("Number of sensors configured %d\n", num_sensors);
+        }
+        sqlite3_finalize(stmt);
+
         GPIO_Output gpio(GPIONum(4));
 
         while (true) {
