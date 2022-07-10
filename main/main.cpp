@@ -112,6 +112,10 @@ extern "C" void app_main(void)
        errors. */
     try {
         initialize_card();
+        // System system;
+        // Database database("/sdcard/config.db");
+        // Config config(db);
+        // System.set_wifi(config);
 
         sqlite3 *db;
         sqlite3_initialize();

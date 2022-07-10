@@ -6,5 +6,6 @@ cmake_minimum_required(VERSION 3.5)
 
 set(EXTRA_COMPONENT_DIRS "$ENV{IDF_PATH}/examples/cxx/experimental/experimental_cpp_component")
 list(APPEND EXTRA_COMPONENT_DIRS components/sqlite3)
+list(APPEND EXTRA_COMPONENT_DIRS components/cron)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(datalogger)

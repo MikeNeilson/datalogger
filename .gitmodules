@@ -1,3 +1,6 @@
 [submodule "components/sqlite"]
 	path = components/sqlite
 	url = https://github.com/siara-cc/esp32-idf-sqlite3
+[submodule "components/cron"]
+	path = components/cron
+	url = https://github.com/DavidMora/esp_cron
