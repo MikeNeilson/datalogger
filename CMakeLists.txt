@@ -9,3 +9,5 @@ list(APPEND EXTRA_COMPONENT_DIRS components/sqlite3)
 list(APPEND EXTRA_COMPONENT_DIRS components/cron)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(datalogger)
+
+spiffs_create_partition_image(data0 data FLASH_IN_PROJECT)
