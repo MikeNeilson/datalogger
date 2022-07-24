@@ -1,0 +1,20 @@
+* C:\Projects\datalogger\circuits\highsideswitch\Draft1.asc
+Q1 N005 N006 0 0 2N3904
+R1 PWRControl N006 1k tol=5
+R2 N005 N003 1k tol=5
+V1 Vbatt 0 3.3 Rser=.1
+R_load Vsensor 0 300 tol=5
+S1 Vbatt PWRControl N002 N001 MYSW
+R_pulldown PWRControl 0 30k
+V2 N001 N002 PULSE(0 -5 0 .001 .001 1 2)
+Q2 N004 N003 Vbatt 0 PNP
+D1 N004 Vsensor 1N5817
+.model D D
+.lib C:\Users\mike\Documents\LTspiceXVII\lib\cmp\standard.dio
+.model NPN NPN
+.model PNP PNP
+.lib C:\Users\mike\Documents\LTspiceXVII\lib\cmp\standard.bjt
+.tran 0 4 0 startup
+.model MYSW SW(Ron=1 Roff=1Meg Vt=.5 Vh=0.4
+.backanno
+.end
