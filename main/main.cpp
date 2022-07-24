@@ -53,70 +53,26 @@ extern "C" void app_main(void)
 {
     try
     {
-        logger.init();        
+
+        // load base config
+        // load user config
+        // init wifi
+        // start ts db task
+        // start cronjobs
+        // start web server
+
+
+        logger.init();
         wifi_init_station();
         server.init();
         // System system;
         // Database database("/sdcard/config.db");
         // Config config(db);
         // System.set_wifi(config);
+        
+        // start database task
 
-        sqlite3 *db;
-        sqlite3_initialize();
-        int res = sqlite3_open("/sdcard/test.db", &db);
-        if (res != 0)
-        {
-            ESP_LOGE(TAG, "failed to open datbase.");
-        }
-        else 
-        {
-            ESP_LOGI(TAG, "database opened");
-            /* This line may throw an exception if the pin number is invalid.
-            * Alternatively to 4, choose another output-capable pin. */
-            char *zErrMsg = nullptr;
-            ESP_LOGI(TAG,"loading init file");
-            ifstream init("/spiffs/dbinit.sql");
-            if( !init.is_open() ){
-                ESP_LOGE(TAG,"failed to open db initialization file");
-                return;
-            }
-            stringstream ss;
-            ESP_LOGI(TAG,"Loading sql file");
-            ss << init.rdbuf();
-            ESP_LOGI(TAG,"Running init");
-            int sqlRes = sqlite3_exec(db, ss.str().c_str(), nullptr, nullptr, &zErrMsg);
-            if (sqlRes != SQLITE_OK)
-            {
-                printf("SQL error: %s\n", zErrMsg);
-                sqlite3_free(zErrMsg);
-                return;
-            }
-            
-            sqlRes = sqlite3_exec(db, "insert into config(key,value,type) values ('ssid','mmnet','text');", nullptr, nullptr, &zErrMsg);
-            if (sqlRes != SQLITE_OK)
-            {
-                printf("SQL error: %s\n", zErrMsg);
-                sqlite3_free(zErrMsg);
-                return;
-            }
-            sqlite3_stmt *stmt;
-            std::string query = "select * from config where key = ?";
-            sqlite3_prepare_v2(db, query.c_str(), query.size(), &stmt, NULL);
-            sqlite3_bind_text(stmt, 1, "ssid", 4, NULL);
-            sqlRes = sqlite3_step(stmt);
-            if (sqlRes == SQLITE_ROW)
-            {
-                const unsigned char *ssid = sqlite3_column_text(stmt, 1);
-                printf("SSID to use is %s\n", ssid);
-                
-            }
-            else if (sqlRes == SQLITE_ERROR)
-            {
-                printf("Error getting ssid %s", sqlite3_errmsg(db));
-            }
-            sqlite3_finalize(stmt);
-
-        }
+        
         ESP_LOGI(TAG,"letting system run");
         logger.run();        
     }
@@ -124,5 +80,8 @@ extern "C" void app_main(void)
     {
         printf("GPIO exception occurred: %s\n", esp_err_to_name(e.error));
         printf("stopping.\n");
+    }
+    catch (exception &e){
+        printf(e.what());
     }
 }

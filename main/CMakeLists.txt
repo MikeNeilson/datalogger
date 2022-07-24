@@ -4,4 +4,5 @@ idf_component_register(
     wifi.cpp
     system.cpp
     server.cpp
+    config.cpp
     INCLUDE_DIRS ".")

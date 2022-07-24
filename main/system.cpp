@@ -3,6 +3,7 @@
 #include <thread>
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <sys/unistd.h>
@@ -22,6 +23,7 @@
 #include "nvs_flash.h"
 
 #include "modules.h"
+#include "config.hpp"
 
 using namespace std;
 using namespace idf;
@@ -35,6 +37,13 @@ void LoggerSystem::init() {
     this->initialize_spiffs("data0");
     this->initialize_card();
     this->init_wifi();
+    
+    the_config = make_unique<Config>("/sdcard/test.db");
+    const char *prop = "ssid";
+    auto& _conf = this->config();
+    auto ssid = _conf.get<string>(prop);
+    cout << "got SSID = " << ssid.value() << " from config" << endl;;
+    //ESP_LOGI(TAG, ssid.value().c_str());
 }
 
 void LoggerSystem::init_wifi() {
