@@ -50,10 +50,12 @@ const char *TAG = "LOGGER";
 LoggerSystem logger;        
 Server server;
 
+
 extern "C" void app_main(void)
 {
     try
     {
+<<<<<<< HEAD
         // baseline hardware
         //logger.init();
         // database task
@@ -63,20 +65,7 @@ extern "C" void app_main(void)
         // web server
         //server.init();
         // measurement tasks (cron?)
-/*
-        gpio_config_t io_conf = {};
-        //disable interrupt
-        io_conf.intr_type = GPIO_INTR_DISABLE;
-        //set as output mode
-        io_conf.mode = GPIO_MODE_INPUT;
-        //bit mask of the pins that you want to set,e.g.GPIO18/19
-        io_conf.pin_bit_mask = GPIO_NUM_12;
-        //disable pull-down mode
-        io_conf.pull_down_en = (gpio_pulldown_t)0;
-        //disable pull-up mode
-        io_conf.pull_up_en = (gpio_pullup_t)1;
-        //configure GPIO with the given settings
-        gpio_config(&io_conf);*/
+
 
         /* pulse counting code*/
         pcnt_unit_t unit = PCNT_UNIT_0;
@@ -141,7 +130,6 @@ extern "C" void app_main(void)
         
         // start database task
 
-        
         ESP_LOGI(TAG,"letting system run");
         logger.run();        
     }

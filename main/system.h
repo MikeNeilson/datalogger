@@ -22,6 +22,8 @@ class LoggerSystem {
         void init_nvs();
         void init_wifi();
 
+        void load_config();
+
     public:
         LoggerSystem();
         void run();

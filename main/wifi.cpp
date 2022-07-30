@@ -1,3 +1,4 @@
+/** derived directly from provided examples */
 #include "modules.h"
 
 #include "freertos/FreeRTOS.h"

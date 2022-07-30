@@ -1,6 +1,7 @@
 #include "server.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "system.h"
 
 extern "C" {
     
@@ -10,7 +11,7 @@ esp_err_t index_handler(httpd_req_t *req){
 }
 
 httpd_uri_t uri_index = {
-    .uri = "/uri",
+    .uri = "/",
     .method = HTTP_GET,
     .handler = index_handler,
     .user_ctx = NULL
@@ -22,9 +23,12 @@ Server::Server() {
     
 }
 
-void Server::init() {
+void Server::init(LoggerSystem *logger) {
+    this->logger = logger;
+
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     
+
     if( httpd_start(&server, &config) == ESP_OK ) {
         httpd_register_uri_handler(server,&uri_index);
     }
