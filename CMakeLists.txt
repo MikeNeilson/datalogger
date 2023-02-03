@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(EXTRA_COMPONENT_DIRS "$ENV{IDF_PATH}/examples/cxx/experimental/experimental_cpp_component")
 list(APPEND EXTRA_COMPONENT_DIRS components/sqlite3)
 list(APPEND EXTRA_COMPONENT_DIRS components/cron)
+list(APPEND EXTRA_COMPONENT_DIRS components/sensors)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(datalogger)
 
