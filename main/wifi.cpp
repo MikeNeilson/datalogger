@@ -33,11 +33,15 @@ static EventGroupHandle_t s_wifi_event_group;
  * - we failed to connect after the maximum amount of retries */
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
-
+#include "config.hpp"
+const char* TAG = "DL_WIFI";
 
 static int s_retry_num = 0;
 
 extern "C" {
+    void wifi_init_station(Config &config);
+    //void wifi_init_ap(Config &config);
+
     static void event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
     {
@@ -60,8 +64,12 @@ extern "C" {
         }
     }
 
+    void wifi_init(Config& config)
+    {
+        wifi_init_station(config);
+    }
 
-    void wifi_init_station(void)
+    void wifi_init_station(Config& config)
     {
         s_wifi_event_group = xEventGroupCreate();
 

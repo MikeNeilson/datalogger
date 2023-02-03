@@ -16,20 +16,16 @@ class LoggerSystem {
         
         std::unique_ptr<Config> the_config;
 
-
         void initialize_card();
         void initialize_spiffs(const std::string &partition);
         void init_nvs();
         void init_wifi();
-
-        void load_config();
 
     public:
         LoggerSystem();
         void run();
         void init();
         Config& config() { return *the_config; }
-        //Config& config() { return *the_config; }
 
 };
 

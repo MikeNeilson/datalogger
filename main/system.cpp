@@ -163,64 +163,6 @@ sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     sdmmc_card_print_info(stdout, card);
 }
 
-void LoggerSystem::load_config() {
-        sqlite3 *db;
-        char *zErrMsg = nullptr;
-        sqlite3_initialize();
-        int res = sqlite3_open("/sdcard/test.db", &db);        
-        if (res != 0)
-        {
-            ESP_LOGE(TAG, "failed to open datbase.");
-            throw std::exception("unable to open or create configuration database");
-        }        
-        ESP_LOGI(TAG, "config database opened, checking version level");
-        
-
-        
-        ESP_LOGI(TAG,"loading init file");
-        ifstream init("/spiffs/dbinit.sql");
-        if( !init.is_open() ){
-            ESP_LOGE(TAG,"failed to open db initialization file");
-            return;
-        }
-        stringstream ss;
-        ESP_LOGI(TAG,"Loading sql file");
-        ss << init.rdbuf();
-        ESP_LOGI(TAG,"Running init");
-        int sqlRes = sqlite3_exec(db, ss.str().c_str(), nullptr, nullptr, &zErrMsg);
-        if (sqlRes != SQLITE_OK)
-        {
-            printf("SQL error: %s\n", zErrMsg);
-            sqlite3_free(zErrMsg);
-            return;
-        }
-        
-        sqlRes = sqlite3_exec(db, "insert into config(key,value,type) values ('ssid','mmnet','text');", nullptr, nullptr, &zErrMsg);
-        if (sqlRes != SQLITE_OK)
-        {
-            printf("SQL error: %s\n", zErrMsg);
-            sqlite3_free(zErrMsg);
-            return;
-        }
-        sqlite3_stmt *stmt;
-        std::string query = "select * from config where key = ?";
-        sqlite3_prepare_v2(db, query.c_str(), query.size(), &stmt, NULL);
-        sqlite3_bind_text(stmt, 1, "ssid", 4, NULL);
-        sqlRes = sqlite3_step(stmt);
-        if (sqlRes == SQLITE_ROW)
-        {
-            const unsigned char *ssid = sqlite3_column_text(stmt, 1);
-            printf("SSID to use is %s\n", ssid);
-            
-        }
-        else if (sqlRes == SQLITE_ERROR)
-        {
-            printf("Error getting ssid %s", sqlite3_errmsg(db));
-        }
-        sqlite3_finalize(stmt);
-
-        }
-}
 
 
 void LoggerSystem::run() {

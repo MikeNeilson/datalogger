@@ -45,16 +45,18 @@ MOSI	GPIO 23
 CLK	    GPIO 18
 MISO	GPIO 19
 */
-const char *TAG = "LOGGER";
+
 
 LoggerSystem logger;        
 Server server;
-
+//TSDB timedb;
 
 extern "C" void app_main(void)
 {
+    const char *TAG = "LOGGER";
     try
     {
+<<<<<<< HEAD
 <<<<<<< HEAD
         // baseline hardware
         //logger.init();
@@ -127,9 +129,6 @@ extern "C" void app_main(void)
         // Database database("/sdcard/config.db");
         // Config config(db);
         // System.set_wifi(config);
-        
-        // start database task
-
         ESP_LOGI(TAG,"letting system run");
         logger.run();        
     }

@@ -7,12 +7,12 @@
 class Server {
     private:
         httpd_handle_t server;
-        LoggerSystem *config = nullptr;
+        LoggerSystem *logger = nullptr;
 
     public:
         Server();
         ~Server();
-        void init(LoggerSystem *config);
+        void init(LoggerSystem *logger);
 };
 
 #endif
