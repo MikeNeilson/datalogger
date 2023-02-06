@@ -1,4 +1,6 @@
 #include "counter.hpp"
+#include "sdkconfig.h"
+#include "esp_log.h"
 
 namespace dl {
 using std::string;
@@ -39,7 +41,9 @@ std::vector<measurement> Counter::measure() {
     pcnt_get_counter_value(unit,&count);
     pcnt_counter_clear(unit);
     pcnt_counter_resume(unit);
-    measurements[0] = {"count",static_cast<double>(count)};
+    ESP_LOGI("COUNTER","%d",count);
+    std::vector<measurement> measurements;
+    measurements.push_back({VALUE_NAME,static_cast<double>(count)});
     return measurements;
 }
 

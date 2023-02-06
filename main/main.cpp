@@ -49,8 +49,40 @@ MISO	GPIO 19
 
 LoggerSystem logger;        
 Server server;
+dl::Counter counter(GPIO_NUM_12,false);
 //TSDB timedb;
 
+extern "C" void check_rain(void *data)
+{
+        TickType_t last_wake_time;
+        BaseType_t xWasDelayed;
+        last_wake_time = xTaskGetTickCount();
+        const uint16_t freqS = 1;
+        const TickType_t freqTicks = pdMS_TO_TICKS(freqS*1000);
+        dl::Counter *rain = static_cast<dl::Counter*>(data);
+        for(;;)
+        {
+            xWasDelayed = xTaskDelayUntil( &last_wake_time, freqTicks );
+            TickType_t current_time = xTaskGetTickCount();
+            
+            if( xWasDelayed == pdTRUE ) {
+                ESP_LOGI("RAIN","was delayed");
+            }
+            ESP_LOGI("RAIN","Getting pulse count.");
+            auto m = rain->measure();
+                for(auto &meas: m) {
+                ESP_LOGI("RAIN","values %s,%f",meas.get_name().c_str(),meas.get_value());
+            }
+            double count = m[0].get_value();
+            TickType_t elapsed_ticks = (current_time-last_wake_time);
+            float rate = static_cast<float>(count)/static_cast<float>(freqS+elapsed_ticks);
+
+            ESP_LOGI("RAIN","\t(current_tick,last_ticks,count,elapsed_ticks,rate)->");
+            ESP_LOGI("RAIN","\t %09d        ,%09d      ,%f ,%05d         ,%f)",current_time,last_wake_time,count,elapsed_ticks,rate);
+            
+        }
+}
+TaskHandle_t xHandle = NULL;
 extern "C" void app_main(void)
 {
     const char *TAG = "LOGGER";
@@ -65,32 +97,11 @@ extern "C" void app_main(void)
         // web server
         //server.init();
         // measurement tasks (cron?)
+        
 
 
-     
-        TickType_t last_wake_time;
-        BaseType_t xWasDelayed;
-        last_wake_time = xTaskGetTickCount();
-        const uint16_t freqS = 10;
-        const TickType_t freqTicks = pdMS_TO_TICKS(freqS*1000);
-        dl::Counter counter(GPIO_NUM_12,false);
-        for(;;)
-        {
-            xWasDelayed = xTaskDelayUntil( &last_wake_time, freqTicks );
-            TickType_t current_time = xTaskGetTickCount();
-            
-            if( xWasDelayed == pdTRUE ) {
-                ESP_LOGI("RAIN","was delayed");
-            }
-            ESP_LOGI("RAIN","Getting pulse count.");
-            double count = counter.measure()[0].get_value();
-            TickType_t elapsed_ticks = (current_time-last_wake_time);
-            float rate = static_cast<float>(count)/static_cast<float>(freqS+elapsed_ticks);
-
-            ESP_LOGI("RAIN","\t(current_tick,last_ticks,count,elapsed_ticks,rate)->");
-            ESP_LOGI("RAIN","\t %09d        ,%09d      ,%03f ,%05d         ,%f)",current_time,last_wake_time,count,elapsed_ticks,rate);
-            
-        }
+      ESP_LOGI("RAIN","starting task");     
+       xTaskCreate(check_rain,"check_rain",1024*32,&counter,1,&xHandle);
         
 
         
@@ -101,12 +112,14 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG,"letting system run");
         logger.run();        
     }
-    catch (GPIOException &e)
+    catch (GPIOException& e)
     {
         printf("GPIO exception occurred: %s\n", esp_err_to_name(e.error));
         printf("stopping.\n");
     }
-    catch (exception &e){
+    catch (const exception& e)
+    {
+        printf("General error");
         printf(e.what());
     }
 }
