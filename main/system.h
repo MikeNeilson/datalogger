@@ -16,6 +16,8 @@ class LoggerSystem {
         
         std::unique_ptr<Config> the_config;
 
+        bool has_card = false;        
+
         void initialize_card();
         void initialize_spiffs(const std::string &partition);
         void init_nvs();

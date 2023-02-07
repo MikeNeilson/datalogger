@@ -4,7 +4,7 @@
 #include "system.h"
 
 extern "C" {
-    
+
 esp_err_t index_handler(httpd_req_t *req){
     httpd_resp_send(req,"Hello!",HTTPD_RESP_USE_STRLEN);
     return ESP_OK;

@@ -7,5 +7,8 @@ extern "C" {
     void wifi_init(Config& config);
 }
 
+extern "C" {
+    void measure_sensors(void *config);
+}
 
 #endif

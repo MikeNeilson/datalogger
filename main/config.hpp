@@ -34,10 +34,7 @@ class property {
             this->get_prop = get_func;
             this->set_prop = set_func;
         }
-        /*property(const std::string& key, const T &value) {
-            this->key = key;
-            this->value = value;
-        }*/
+
         property(const property<T>& other) {
             this->the_key = other.the_key;
             this->the_value = other.the_value;
@@ -54,6 +51,7 @@ class property {
 
         property<T>& operator=(T value) {
             this->the_value = value;
+            ESP_LOGI("prop","the value = %s",this->the_value.c_str());
             set_prop(the_key,the_value);
             return *this;
         }
@@ -80,30 +78,22 @@ class property {
         const std::string& key() { return the_key; }
 };
 
-class db_exception : protected std::exception {
-    std::string msg;
-    public:
-        db_exception(std::string the_msg ) : msg(the_msg) {
 
-        }
-
-        const char* what() const noexcept override {
-            return msg.c_str();
-        }
-};
 
 class Config {
 
     typedef std::variant<property<int>,property<double>,property<std::string>> prop_types;
 
     const char *TAG = "Config";
-    sqlite3 *db = nullptr;
+    const std::string database_file = "/sdcard/config.db";
     char *err_msg;
     SemaphoreHandle_t mutex;
-    sqlite3_stmt *get_prop = nullptr;
-    sqlite3_stmt *set_prop = nullptr;
-
+    const char* get_prop_query = "select name from config where name = ?";
+    const char* set_prop_query = "insert into config(name,value) values(?,?) on conflict(name) do update set value=excluded.value";
     std::map<std::string,prop_types> properties;
+
+
+    void load_file(sqlite3 *db, const std::string &file);
 
     public:
         Config(const std::string &database);
@@ -136,7 +126,6 @@ class Config {
 
     private:
         void init_db();
-        void init_queries();
 
         template<typename T>
         T get_property_value(const std::string& key);

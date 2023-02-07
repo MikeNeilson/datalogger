@@ -24,6 +24,7 @@
 
 #include "modules.h"
 #include "config.hpp"
+#include "db.hpp"
 
 using namespace std;
 using namespace idf;
@@ -36,18 +37,19 @@ void LoggerSystem::init() {
     this->init_nvs();
     this->initialize_spiffs("data0");
     this->initialize_card();
-    this->init_wifi();
     
-    the_config = make_unique<Config>("/sdcard/test.db");
-    const char *prop = "ssid";
-    auto& _conf = this->config();
-    auto ssid = _conf.get<string>(prop);
-    cout << "got SSID = " << ssid.value() << " from config" << endl;;
-    //ESP_LOGI(TAG, ssid.value().c_str());
+
+    try {
+        the_config = make_unique<Config>("/sdcard/config.db");      
+    } catch (const db_exception &ex) {
+        ESP_LOGE(TAG,"Config database not initialized: %s",ex.what());
+    }
+    
 }
 
 void LoggerSystem::init_wifi() {
-
+    this->init_wifi();
+    //auto &ssid = _conf.get<string>(prop);
 }
 
 
@@ -99,7 +101,7 @@ ESP_LOGI(TAG, "Initializing SPIFFS");
 }
 
 void LoggerSystem::initialize_card() {
-sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     host.slot = HSPI_HOST;
     host.max_freq_khz = 5000;
 
@@ -131,7 +133,7 @@ sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     // If format_if_mount_failed is set to true, SD card will be partitioned and
     // formatted in case when mounting fails.
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = true,
+        .format_if_mount_failed = false,
         .max_files = 5,
         .allocation_unit_size = 4 * 1024};
 
@@ -158,7 +160,7 @@ sdmmc_host_t host = SDSPI_HOST_DEFAULT();
         }
         return;
     }
-
+    has_card = true;
     // Card has been initialized, print its properties
     sdmmc_card_print_info(stdout, card);
 }

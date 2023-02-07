@@ -57,7 +57,7 @@ extern "C" void check_rain(void *data)
         TickType_t last_wake_time;
         BaseType_t xWasDelayed;
         last_wake_time = xTaskGetTickCount();
-        const uint16_t freqS = 1;
+        const uint16_t freqS = 5;
         const TickType_t freqTicks = pdMS_TO_TICKS(freqS*1000);
         dl::Counter *rain = static_cast<dl::Counter*>(data);
         for(;;)
@@ -66,19 +66,19 @@ extern "C" void check_rain(void *data)
             TickType_t current_time = xTaskGetTickCount();
             
             if( xWasDelayed == pdTRUE ) {
-                ESP_LOGI("RAIN","was delayed");
+                ESP_LOGV("RAIN","was delayed");
             }
-            ESP_LOGI("RAIN","Getting pulse count.");
+            ESP_LOGD("RAIN","Getting pulse count.");
             auto m = rain->measure();
                 for(auto &meas: m) {
-                ESP_LOGI("RAIN","values %s,%f",meas.get_name().c_str(),meas.get_value());
+                ESP_LOGV("RAIN","values %s,%f",meas.get_name().c_str(),meas.get_value());
             }
             double count = m[0].get_value();
             TickType_t elapsed_ticks = (current_time-last_wake_time);
             float rate = static_cast<float>(count)/static_cast<float>(freqS+elapsed_ticks);
 
-            ESP_LOGI("RAIN","\t(current_tick,last_ticks,count,elapsed_ticks,rate)->");
-            ESP_LOGI("RAIN","\t %09d        ,%09d      ,%f ,%05d         ,%f)",current_time,last_wake_time,count,elapsed_ticks,rate);
+            ESP_LOGD("RAIN","\t(current_tick,last_ticks,count,elapsed_ticks,rate)->");
+            ESP_LOGD("RAIN","\t %09d        ,%09d      ,%f ,%05d         ,%f)",current_time,last_wake_time,count,elapsed_ticks,rate);
             
         }
 }
@@ -89,7 +89,7 @@ extern "C" void app_main(void)
     try
     {
         // baseline hardware
-        //logger.init();
+        logger.init();
         // database task
         // config task
         // setup wifi, etc

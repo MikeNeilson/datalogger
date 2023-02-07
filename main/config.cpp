@@ -2,10 +2,17 @@
 #include <exception>
 #include <fstream>
 #include <sstream>
+#include <streambuf>
 #include "sqlite3.h"
+#include "query.hpp"
+#include "db.hpp"
 #include <esp_log.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 using namespace std;
 
@@ -18,72 +25,87 @@ Config::Config(const std::string &database) {
         ss << "Unable to initialize SQLite. Error: " << result << std::endl;
         throw db_exception(ss.str().c_str());
     }
-
-    result = sqlite3_open(database.c_str(), &db);
-    if( result != SQLITE_OK ){
-        throw db_exception(sqlite3_errmsg(db));
-    }
-
     this->init_db();
-    this->init_queries();
+    
 }
 
-Config::~Config() {
-    if( db != nullptr ) {
-        xSemaphoreTake(mutex,portTICK_PERIOD_MS*1);
-        sqlite3_close(db);
-    }
-}
-    
-void Config::init_queries() {
-    int result = sqlite3_prepare_v2(this->db, "select value from config where key = ?",-1,&get_prop,nullptr);
-    if( result != SQLITE_OK ){
-        throw db_exception(sqlite3_errmsg(db));
-    }
-    result = sqlite3_prepare_v2(this->db, "insert into config(key,value) values(?,?) on conflict(key) do update set key =excluded.key",-1,&get_prop,nullptr);
-    if( result != SQLITE_OK ){
-        throw db_exception(sqlite3_errmsg(db));
-    }
+Config::~Config() {    
 }
 
 void Config::init_db() {
-    std::ifstream init("/spiffs/dbinit.sql");
-    if( !init.is_open() ){
-        ESP_LOGE(TAG,"failed to open db initialization file");
+    using std::string;
+    using std::ifstream;
+    using std::stringbuf;
+    database db(database_file);    
+    query new_db(db,"SELECT name FROM sqlite_master WHERE type='table' AND name=?");
+    new_db.bind_string(1,"schema_history");
+    bool isNewDb = new_db.execute().next();
+
+    DIR* db_dir = opendir("/spiffs/db");
+    dirent *file = nullptr;
+    while( (file = readdir(db_dir)) != nullptr ) {
+        std::string file_name = std::string("/spiffs/db/") + file->d_name;
+        query q(db,"select * from schema_history where file_name=?");
+        q.bind_string(1,file_name);
+        if( isNewDb || !q.execute().next() ) {
+            load_file(db,file_name);
+        }
+        query insert_filename(db,"insert into schema_history(file_name) values(?)");
+        insert_filename.bind_string(1,file_name);
+        insert_filename.executeUpdate();
+    }
+    closedir(db_dir);
+}
+
+void Config::load_file(sqlite3* db, const std::string &file) {
+    ifstream init(file); 
+    if( !init.is_open() ) {
+        ESP_LOGE(TAG,"failed to open db initialization file %s because %s",file.c_str(),strerror(errno));
         return;
     }
-    std::stringstream ss;
-    ESP_LOGI(TAG,"Loading sql file");
-    ss << init.rdbuf();
-    ESP_LOGI(TAG,"Running init");
-    int sqlRes = sqlite3_exec(db, ss.str().c_str(), nullptr, nullptr, &err_msg);
-    if (sqlRes != SQLITE_OK)
-    {
-        printf("SQL error: %s\n",err_msg);
-        sqlite3_free(err_msg);
-        return;
+    ESP_LOGD(TAG,"Processing init file");
+    while (!init.eof()) {
+        string line;
+        std::getline(init,line,';');
+        
+        if (line.empty()) {
+            continue;
+        }
+        ESP_LOGD(TAG,"Executing: %s",line.c_str());
+        int sqlRes = sqlite3_exec(db, line.c_str(), nullptr, nullptr, &err_msg);        
+        if (sqlRes != SQLITE_OK)
+        {
+            ESP_LOGE(TAG,"SQL error: %s",err_msg);
+            sqlite3_free(err_msg);
+            throw db_exception(sqlite3_errmsg(db));
+        }
     }
 }    
 
 
 template<>
 std::string Config::get_property_value<std::string>(const std::string& key) {
-    int result = sqlite3_bind_text(get_prop,1,key.c_str(),key.size(),nullptr);
-    if( result != SQLITE_OK ){
-        throw db_exception(sqlite3_errmsg(db));
+    database db(database_file);
+    query q(db,this->get_prop_query);
+    q.bind_string(1,key);
+    result r = q.execute();
+    if( r.next() ) {
+        std::string v = r.get_string(1);
+        ESP_LOGV("Config","Got prop value %s",v.c_str());
+        return v;
+    } else {
+        ESP_LOGV("Config","prop doesn't yet exist");
+        return "";
     }
-
-    result = sqlite3_step(get_prop);
-    if( result != SQLITE_OK ) {
-        throw db_exception(sqlite3_errmsg(db));
-    }
-    
-    return std::string(reinterpret_cast<const char*>(sqlite3_column_text(get_prop,1)));
-
 }
 
 
 template<>
 void Config::set_property_value<std::string>(const string& key, const string& value) {
-
+    database db(database_file);
+    query q(db,this->set_prop_query);
+    q.bind_string(1,key);
+    q.bind_string(2,value);
+    q.executeUpdate();
+    ESP_LOGV(TAG,"saved property %s,%s",key.c_str(),value.c_str());
 }

@@ -41,7 +41,7 @@ std::vector<measurement> Counter::measure() {
     pcnt_get_counter_value(unit,&count);
     pcnt_counter_clear(unit);
     pcnt_counter_resume(unit);
-    ESP_LOGI("COUNTER","%d",count);
+    ESP_LOGV("COUNTER","%d",count);
     std::vector<measurement> measurements;
     measurements.push_back({VALUE_NAME,static_cast<double>(count)});
     return measurements;

@@ -5,4 +5,6 @@ idf_component_register(
     system.cpp
     server.cpp
     config.cpp
+    query.cpp
+    db.cpp
     INCLUDE_DIRS ".")
