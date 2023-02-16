@@ -16,6 +16,7 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -31,6 +32,7 @@
 #include "nvs_flash.h"
 #include "counter.hpp"
 #include "sqlite3.h"
+//#include "cron.h"
 
 #include "modules.h"
 #include "system.h"
@@ -49,7 +51,7 @@ MISO	GPIO 19
 
 LoggerSystem logger;        
 Server server;
-dl::Counter counter(GPIO_NUM_12,false);
+dl::Counter counter(GPIO_NUM_2,false);
 //TSDB timedb;
 
 extern "C" void check_rain(void *data)
@@ -76,9 +78,19 @@ extern "C" void check_rain(void *data)
             double count = m[0].get_value();
             TickType_t elapsed_ticks = (current_time-last_wake_time);
             float rate = static_cast<float>(count)/static_cast<float>(freqS+elapsed_ticks);
+            time_t now;
+            char strftime_buf[64];
+            tm timeinfo;
 
-            ESP_LOGD("RAIN","\t(current_tick,last_ticks,count,elapsed_ticks,rate)->");
-            ESP_LOGD("RAIN","\t %09d        ,%09d      ,%f ,%05d         ,%f)",current_time,last_wake_time,count,elapsed_ticks,rate);
+            time(&now);
+            setenv("TZ","US/Pacific",1);
+            tzset();
+            localtime_r(&now,&timeinfo);
+            strftime(strftime_buf,sizeof(strftime_buf),"%c",&timeinfo);
+
+            ESP_LOGI("RAIN","time %s",strftime_buf);
+            ESP_LOGI("RAIN","\t(current_tick,last_ticks,count,elapsed_ticks,rate)->");
+            ESP_LOGI("RAIN","\t %09d        ,%09d      ,%f ,%05d         ,%f)",current_time,last_wake_time,count,elapsed_ticks,rate);
             
         }
 }
@@ -101,7 +113,7 @@ extern "C" void app_main(void)
 
 
       ESP_LOGI("RAIN","starting task");     
-       xTaskCreate(check_rain,"check_rain",1024*32,&counter,1,&xHandle);
+      xTaskCreate(check_rain,"check_rain",1024*32,&counter,1,&xHandle);
         
 
         

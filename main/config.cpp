@@ -39,22 +39,37 @@ void Config::init_db() {
     database db(database_file);    
     query new_db(db,"SELECT name FROM sqlite_master WHERE type='table' AND name=?");
     new_db.bind_string(1,"schema_history");
-    bool isNewDb = new_db.execute().next();
+    bool isNewDb = !new_db.execute().next();
+
+    if (!isNewDb) {
+        ESP_LOGI(TAG,"The following database files have already been applied");
+        query applied(db,"select file_name from schema_history");
+        auto result = applied.execute();
+        while (result.next()) {
+            ESP_LOGI(TAG,"next.");
+            auto file_name = result.get_string(0).value_or("Unknown filename somehow?");
+            ESP_LOGI(TAG,"\t%s",file_name.c_str());
+        }
+    }
 
     DIR* db_dir = opendir("/spiffs/db");
     dirent *file = nullptr;
     while( (file = readdir(db_dir)) != nullptr ) {
         std::string file_name = std::string("/spiffs/db/") + file->d_name;
-        query q(db,"select * from schema_history where file_name=?");
+        ESP_LOGI(TAG,"Checking for file %s",file_name.c_str());
+        query q(db,"select file_name from schema_history where file_name=?");
         q.bind_string(1,file_name);
-        if( isNewDb || !q.execute().next() ) {
+        if (isNewDb || !q.execute().next()) {
+            ESP_LOGI(TAG,"File not found in history, loading again");
             load_file(db,file_name);
+            ESP_LOGI(TAG,"Now marking as saved");
+            query insert_filename(db,"insert into schema_history(file_name) values(?)");
+            insert_filename.bind_string(1,file_name);
+            insert_filename.executeUpdate();
         }
-        query insert_filename(db,"insert into schema_history(file_name) values(?)");
-        insert_filename.bind_string(1,file_name);
-        insert_filename.executeUpdate();
     }
     closedir(db_dir);
+    ESP_LOGI(TAG, "Database read in/verified.");
 }
 
 void Config::load_file(sqlite3* db, const std::string &file) {
@@ -90,11 +105,11 @@ std::string Config::get_property_value<std::string>(const std::string& key) {
     q.bind_string(1,key);
     result r = q.execute();
     if( r.next() ) {
-        std::string v = r.get_string(1);
-        ESP_LOGV("Config","Got prop value %s",v.c_str());
+        std::string v = r.get_string(0).value_or("");
+        ESP_LOGV(TAG,"Got prop value %s",v.c_str());
         return v;
     } else {
-        ESP_LOGV("Config","prop doesn't yet exist");
+        ESP_LOGV(TAG,"prop doesn't yet exist");
         return "";
     }
 }

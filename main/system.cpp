@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <thread>
 #include <cstdio>
+#include <string>
 #include <cstring>
 #include <iostream>
 #include <fstream>
@@ -12,6 +13,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "esp_sntp.h"
 #include "esp_vfs_fat.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdspi_host.h"
@@ -40,7 +42,13 @@ void LoggerSystem::init() {
     
 
     try {
-        the_config = make_unique<Config>("/sdcard/config.db");      
+        the_config = make_unique<Config>("/sdcard/config.db");
+        this->init_wifi();
+
+        // TODO: get time server from config
+        sntp_setoperatingmode(SNTP_OPMODE_POLL);
+        sntp_setservername(0, "pool.ntp.org");
+        sntp_init();
     } catch (const db_exception &ex) {
         ESP_LOGE(TAG,"Config database not initialized: %s",ex.what());
     }
@@ -48,7 +56,7 @@ void LoggerSystem::init() {
 }
 
 void LoggerSystem::init_wifi() {
-    this->init_wifi();
+    wifi_init(*(this->the_config));
     //auto &ssid = _conf.get<string>(prop);
 }
 

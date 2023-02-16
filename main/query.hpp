@@ -1,6 +1,7 @@
 #pragma once
 #include "sqlite3.h"
 #include <string>
+#include <optional>
 #include "db.hpp"
 
 class query;
@@ -10,9 +11,16 @@ class result {
         query &q;
 
         result(query &q) : q(q) {};
+        
+        
     public:
+        result(result &&other) : q(other.q) {};
+        result(const result &other) = delete;
+        ~result() {}
+
+
         bool next();
-        std::string get_string(int column);
+        std::optional<std::string> get_string(int column);
         friend class query;
 };
 
@@ -30,7 +38,7 @@ class query {
         void bind_string(int column, const std::string& value);
         result execute();
         void executeUpdate();
-        std::string get_string(int column);
+        std::optional<std::string> get_string(int column);
 
     friend class result;
 };

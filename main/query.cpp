@@ -4,10 +4,20 @@
 
 bool result::next() {
     int result = sqlite3_step(q.stmt);
-    return result == SQLITE_OK;
+    if (result == SQLITE_DONE) {
+        ESP_LOGE("result","done");
+        return false;
+    } else if (result == SQLITE_ROW) {
+        ESP_LOGE("result","row");
+        return true;
+    } else {        
+        ESP_LOGE("result","Unable to run/step query: %s", sqlite3_errmsg(q.db));
+        throw new db_exception("Unable to run/step query");
+    }    
 }
 
-std::string result::get_string(int column) {
+std::optional<std::string> result::get_string(int column) {
+    ESP_LOGI("result","getting string from query");
     return q.get_string(column);
 }
 
@@ -33,8 +43,9 @@ query::query(sqlite3* db, const char* query) {
 query::~query() {
     int result = sqlite3_finalize(stmt);
     if (result != SQLITE_OK ) {
-        ESP_LOGE("query", "Unable to finalized query %s",sqlite3_errmsg(db));
+        ESP_LOGE("query", "Unable to destroy query %s",sqlite3_errmsg(db));
     }
+    
 }
 
 void query::bind_string(int column, const std::string& value) {
@@ -55,8 +66,17 @@ void query::executeUpdate() {
     }
 }
 
-std::string query::get_string(int column) {
-    auto *text_raw = sqlite3_column_text(stmt,column);
-    std::string text(reinterpret_cast<const char*>(text_raw));
-    return text;
+std::optional<std::string> query::get_string(int column) {
+    ESP_LOGI("query","getting column text");
+    int type = sqlite3_column_type(stmt,column);
+    if (type == SQLITE_TEXT) {
+        auto *text_raw = sqlite3_column_text(stmt,column);
+        std::string text(reinterpret_cast<const char*>(text_raw));
+        return text;
+    } else if( type == SQLITE_NULL) {
+        return std::nullopt;
+    } else {
+        throw new db_exception("not a string value");
+    }
+    
 }
